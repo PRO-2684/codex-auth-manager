@@ -55,11 +55,24 @@ cargo install codex-auth-manager --features=cli
 
 ## 💡 Examples
 
-TODO
+```shell
+cam capture work
+cam list
+cam use personal
+cam detach
+```
 
 ## 📖 Usage
 
-TODO
+`cam` manages named Codex auth identities. Each identity is stored under `$CODEX_HOME/codex-auth-manager/`, and CAM switches which identity Codex sees at `$CODEX_HOME/auth.json`.
+
+Planned v1 CLI:
+
+- `cam` / `cam status` — show the current auth state
+- `cam list` — list saved identities
+- `cam capture <identity> [--force]` — save the current native Codex auth file as an identity and make it active
+- `cam use <identity> [--force]` — make an existing identity active
+- `cam detach [--force]` — stop using the active CAM-managed identity
 
 ## 🎉 Credits
 
