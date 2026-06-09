@@ -4,14 +4,15 @@ version = "0.1.0"
 edition = "2024"
 readme = "README.md"
 description = "A deadly simple Codex auth manager."
-keywords = []
-categories = []
+keywords = ["codex", "auth", "cli"]
+categories = ["command-line-utilities", "authentication"]
 include = ["src", "README.md", "LICENSE"]
 repository = "https://github.com/PRO-2684/codex-auth-manager"
 license = "MIT"
 authors = ["PRO-2684"]
 
 [dependencies]
+thiserror = "2.0.12"
 
 [[bin]]
 name = "cam"
