@@ -1,4 +1,4 @@
-# codex-auth-manager
+# codex-auth-manager (cam)
 
 [![GitHub License](https://img.shields.io/github/license/PRO-2684/codex-auth-manager?logo=opensourceinitiative)](https://github.com/PRO-2684/codex-auth-manager/blob/main/LICENSE)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/PRO-2684/codex-auth-manager/release.yml?logo=githubactions)](https://github.com/PRO-2684/codex-auth-manager/blob/main/.github/workflows/release.yml)
@@ -8,14 +8,13 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/codex-auth-manager?logo=rust)](https://crates.io/crates/codex-auth-manager)
 [![docs.rs](https://img.shields.io/docsrs/codex-auth-manager?logo=rust)](https://docs.rs/codex-auth-manager)
 
-Codex auth manager
+A deadly simple Codex auth manager.
 
 ## ⚙️ Automatic Releases Setup
 
 1. [Create a new GitHub repository](https://github.com/new) with the name `codex-auth-manager` and push this generated project to it.
 2. Enable Actions for the repository, and grant "Read and write permissions" to the workflow [here](https://github.com/PRO-2684/codex-auth-manager/settings/actions).
 3. [Generate an API token on crates.io](https://crates.io/settings/tokens/new), with the following setup:
-
     - `Name`: `codex-auth-manager`
     - `Expiration`: `No expiration`
     - `Scopes`: `publish-new`, `publish-update`

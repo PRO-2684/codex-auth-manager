@@ -3,7 +3,7 @@ name = "codex-auth-manager"
 version = "0.1.0"
 edition = "2024"
 readme = "README.md"
-description = "Codex auth manager"
+description = "A deadly simple Codex auth manager."
 keywords = []
 categories = []
 include = ["src", "README.md", "LICENSE"]
@@ -14,7 +14,8 @@ authors = ["PRO-2684"]
 [dependencies]
 
 [[bin]]
-name = "codex-auth-manager"
+name = "cam"
+path = "src/main.rs"
 required-features = ["cli"]
 
 [features]

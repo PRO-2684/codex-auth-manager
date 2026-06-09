@@ -1,4 +1,4 @@
-description = "\u001b[1;36mcodex-auth-manager\u001b[22;39m: Codex auth manager"
+description = "\u001b[1;36mcam\u001b[22;39m: A deadly simple Codex auth manager."
 
 [[recipes]]
 names = ["build", "b"]
