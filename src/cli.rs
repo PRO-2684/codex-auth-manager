@@ -21,7 +21,7 @@ pub fn run() -> Result<(), CliError> {
         }
     };
 
-    match cli.command.unwrap_or(Command::Status) {
+    match cli.command.unwrap_or_default() {
         Command::Status => {
             let manager = CodexAuthManager::from_env()?;
             println!("{}", manager.status()?);
@@ -77,16 +77,17 @@ pub fn run() -> Result<(), CliError> {
     name = "cam",
     version,
     about = PKG_DESCRIPTION,
-    after_help = "Identity names must match: [a-zA-Z0-9][a-zA-Z0-9._-]*"
+    before_help = "An identity is a named saved Codex auth state."
 )]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Default, Subcommand)]
 enum Command {
     /// Show the current auth state.
+    #[default]
     Status,
     /// List saved identities.
     List,
