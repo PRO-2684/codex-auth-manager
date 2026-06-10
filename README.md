@@ -10,31 +10,6 @@
 
 A deadly simple Codex auth manager.
 
-## ⚙️ Automatic Releases Setup
-
-1. [Create a new GitHub repository](https://github.com/new) with the name `codex-auth-manager` and push this generated project to it.
-2. Enable Actions for the repository, and grant "Read and write permissions" to the workflow [here](https://github.com/PRO-2684/codex-auth-manager/settings/actions).
-3. [Generate an API token on crates.io](https://crates.io/settings/tokens/new), with the following setup:
-    - `Name`: `codex-auth-manager`
-    - `Expiration`: `No expiration`
-    - `Scopes`: `publish-new`, `publish-update`
-    - `Crates`: `codex-auth-manager`
-
-4. [Add a repository secret](https://github.com/PRO-2684/codex-auth-manager/settings/secrets/actions/new) named `CARGO_TOKEN` with the generated token as its value.
-5. Consider removing this section and updating this README with your own project information.
-
-[Trusted Publishing](https://crates.io/docs/trusted-publishing) is a recent feature added to crates.io. To utilize it, first make sure you've already successfully published the crate to crates.io. Then, follow these steps:
-
-1. [Add a new trusted publisher](https://crates.io/crates/codex-auth-manager/settings/new-trusted-publisher) to your crate.
-    - Set "Workflow filename" to `release.yml`.
-    - Keep other fields intact.
-    - Click "Add".
-2. Modify [`release.yml`](.github/workflows/release.yml).
-    1. Comment out or remove the `publish-release` job.
-    2. Un-comment the `trusted-publishing` job.
-3. Remove the `CARGO_TOKEN` [repository secret](https://github.com/PRO-2684/codex-auth-manager/settings/secrets/actions).
-4. Revoke the API token on [crates.io](https://crates.io/settings/tokens).
-
 ## 📥 Installation
 
 ### Using [`binstall`](https://github.com/cargo-bins/cargo-binstall)
