@@ -90,6 +90,6 @@ $ cam list
 * work
 ```
 
-## 🎉 Credits
+## ⚙️ Mechanism
 
-TODO
+![overview](./images/overview.svg)
