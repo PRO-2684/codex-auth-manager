@@ -10,6 +10,8 @@
 
 A deadly simple Codex auth manager.
 
+![overview](./images/overview.svg)
+
 ## 📥 Installation
 
 ### Using [`binstall`](https://github.com/cargo-bins/cargo-binstall)
@@ -89,7 +91,3 @@ $ cam list
   personal
 * work
 ```
-
-## ⚙️ Mechanism
-
-![overview](./images/overview.svg)
