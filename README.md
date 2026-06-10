@@ -28,26 +28,56 @@ Navigate to the [Releases page](https://github.com/PRO-2684/codex-auth-manager/r
 cargo install codex-auth-manager --features=cli
 ```
 
-## 💡 Examples
-
-```shell
-cam capture work
-cam list
-cam use personal
-cam detach
-```
-
 ## 📖 Usage
 
 `cam` manages named Codex auth identities. Each identity is stored under `$CODEX_HOME/codex-auth-manager/`, and CAM switches which identity Codex sees at `$CODEX_HOME/auth.json`.
-
-Planned v1 CLI:
 
 - `cam` / `cam status` — show the current auth state
 - `cam list` — list saved identities
 - `cam capture <identity> [--force]` — save the current native Codex auth file as an identity and make it active
 - `cam use <identity> [--force]` — make an existing identity active
 - `cam detach [--force]` — stop using the active CAM-managed identity
+
+## 💡 Examples
+
+Say that you've logged into Codex with your personal account. Now you've got a new work account, and you want to switch between them without logging in and out every time. With `cam`, you can capture your auth states as identities, which can be switched back to at any time.
+
+```shell
+# Capture the current auth state as "personal" identity
+cam capture personal
+```
+
+Now `auth.json` is moved to `$CODEX_HOME/codex-auth-manager/personal.json`, and a symlink is created at `$CODEX_HOME/auth.json` pointing to it. Then you `detach` the current identity (which basically removes the symlink) and log in to Codex with your work account:
+
+```shell
+# Detach the current identity
+cam detach
+# Log in to Codex with your work account as usual (e.g. via `codex login`)
+```
+
+You can capture the auth state again as "work" identity:
+
+```shell
+# Capture the current auth state as "work" identity
+cam capture work
+```
+
+Now you have two identities saved. You can switch between them with `cam use`:
+
+```shell
+# Switch to "personal" identity
+cam use personal
+# Switch back to "work" identity
+cam use work
+```
+
+To list all saved identities:
+
+```shell
+$ cam list
+  personal
+* work
+```
 
 ## 🎉 Credits
 
