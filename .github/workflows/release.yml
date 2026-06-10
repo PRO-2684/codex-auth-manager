@@ -96,33 +96,18 @@ jobs:
           asset_path: ${{ env.ASSET }}
           asset_name: ${{ env.ASSET }}
           asset_content_type: application/octet-stream
-  publish-release:
-    # Publish the release to crates.io
-    name: publish-release
+  trusted-publishing:
+    # https://crates.io/docs/trusted-publishing
+    name: trusted-publishing
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
-  # trusted-publishing:
-  #   # https://crates.io/docs/trusted-publishing
-  #   name: trusted-publishing
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     id-token: write
-  #   steps:
-  #   - uses: actions/checkout@v5
-  #     with:
-  #       fetch-depth: 1
-  #   - uses: rust-lang/crates-io-auth-action@v1
-  #     id: auth
-  #   - run: cargo publish
-  #     env:
-  #       CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+      - run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
