@@ -73,12 +73,7 @@ pub fn run() -> Result<(), CliError> {
 }
 
 #[derive(Debug, Parser)]
-#[command(
-    name = "cam",
-    version,
-    about = PKG_DESCRIPTION,
-    before_help = "An identity is a named saved Codex auth state."
-)]
+#[command(name = "cam", version, about = PKG_DESCRIPTION)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
