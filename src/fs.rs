@@ -1,6 +1,7 @@
 use std::{
     env::current_dir,
     fs,
+    io::Result as IoResult,
     path::{Component, Path, PathBuf},
 };
 
@@ -46,26 +47,22 @@ pub fn is_broken_identity_path(path: &Path) -> Result<bool, Error> {
 }
 
 #[cfg(unix)]
-pub fn create_symlink(target: impl AsRef<Path>, link: impl AsRef<Path>) -> std::io::Result<()> {
+pub fn create_symlink(target: impl AsRef<Path>, link: impl AsRef<Path>) -> IoResult<()> {
     std::os::unix::fs::symlink(target, link)
 }
 
 #[cfg(windows)]
-pub fn create_symlink(target: impl AsRef<Path>, link: impl AsRef<Path>) -> std::io::Result<()> {
+pub fn create_symlink(target: impl AsRef<Path>, link: impl AsRef<Path>) -> IoResult<()> {
     std::os::windows::fs::symlink_file(target, link)
 }
 
-pub fn replace_file(from: &Path, to: &Path) -> std::io::Result<()> {
-    replace_file_impl(from, to)
-}
-
 #[cfg(unix)]
-fn replace_file_impl(from: &Path, to: &Path) -> std::io::Result<()> {
+pub fn replace_file(from: &Path, to: &Path) -> IoResult<()> {
     fs::rename(from, to)
 }
 
 #[cfg(windows)]
-fn replace_file_impl(from: &Path, to: &Path) -> std::io::Result<()> {
+pub fn replace_file(from: &Path, to: &Path) -> IoResult<()> {
     if to.exists() || to.is_symlink() {
         fs::remove_file(to)?;
     }

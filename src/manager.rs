@@ -289,9 +289,9 @@ impl CodexAuthManager {
     pub fn detach(&self, options: DetachOptions) -> Result<(), Error> {
         match self.status()? {
             AuthStatus::None | AuthStatus::CodexHomeMissing { .. } => Ok(()),
-            AuthStatus::Managed { .. } => remove_auth_file(self),
+            AuthStatus::Managed { .. } => self.remove_auth_file(),
             AuthStatus::BrokenManaged { .. } | AuthStatus::Native if options.force => {
-                remove_auth_file(self)
+                self.remove_auth_file()
             }
             AuthStatus::BrokenManaged { identity } => Err(Error::IdentityBroken { name: identity }),
             AuthStatus::Native => Err(Error::NativeAuthExists),
@@ -415,6 +415,14 @@ impl CodexAuthManager {
         })?;
         Ok(tmp_path)
     }
+
+    fn remove_auth_file(&self) -> Result<(), Error> {
+        fs::remove_file(self.auth_path()).map_err(|source| Error::Io {
+            action: "remove auth file",
+            path: self.auth_path(),
+            source,
+        })
+    }
 }
 
 /// Options for capturing a native auth file.
@@ -436,14 +444,6 @@ pub struct UseOptions {
 pub struct DetachOptions {
     /// Remove a blocking native auth file or broken managed link.
     pub force: bool,
-}
-
-fn remove_auth_file(manager: &CodexAuthManager) -> Result<(), Error> {
-    fs::remove_file(manager.auth_path()).map_err(|source| Error::Io {
-        action: "remove auth file",
-        path: manager.auth_path(),
-        source,
-    })
 }
 
 #[cfg(test)]
