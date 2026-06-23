@@ -14,7 +14,8 @@ authors = ["PRO-2684"]
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"], optional = true }
 clap_complete = { version = "4.6.5", features = ["unstable-dynamic"], optional = true }
-thiserror = "2.0.18"
+declerror = "0.2.1"
+macro_rules_attr = "0.2.0"
 
 [[bin]]
 name = "cam"

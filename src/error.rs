@@ -1,23 +1,24 @@
-use std::path::PathBuf;
+use std::{env::VarError, io::Error as IoError, path::PathBuf};
 
-use thiserror::Error;
+use declerror::error_enum;
+use macro_rules_attr::apply;
 
 use super::{IdentityName, UnknownAuthReason};
 
 /// Error returned by the library API.
-#[derive(Debug, Error)]
+#[apply(error_enum)]
 pub enum Error {
     /// Environment did not contain enough information to resolve Codex home.
     #[error("failed to determine Codex home: {source}")]
     Env {
         /// Source environment error.
-        source: std::env::VarError,
+        source: VarError,
     },
     /// Current working directory could not be read while absolutizing a path.
     #[error("failed to determine current directory: {source}")]
     CurrentDir {
         /// Source filesystem error.
-        source: std::io::Error,
+        source: IoError,
     },
     /// Filesystem operation failed.
     #[error("failed to {action} at {}: {source}", path.display())]
