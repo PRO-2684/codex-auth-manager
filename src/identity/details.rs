@@ -10,16 +10,16 @@ use crate::Error;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdentityDetails {
     /// Account display name.
-    pub display_name: Option<String>,
+    pub name: Option<String>,
     /// Account email address.
     pub email: Option<String>,
 }
 
 impl fmt::Display for IdentityDetails {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match (&self.display_name, &self.email) {
-            (Some(display_name), Some(email)) => write!(f, "{display_name} <{email}>"),
-            (Some(display_name), None) => f.write_str(display_name),
+        match (&self.name, &self.email) {
+            (Some(name), Some(email)) => write!(f, "{name} <{email}>"),
+            (Some(name), None) => f.write_str(name),
             (None, Some(email)) => write!(f, "<{email}>"),
             (None, None) => Ok(()),
         }
@@ -63,10 +63,10 @@ fn parse_auth_details(auth: &[u8]) -> Option<IdentityDetails> {
     let payload = BASE64_URL_SAFE_NO_PAD.decode(payload).ok()?;
     let claims: Value = serde_json::from_slice(&payload).ok()?;
     let details = IdentityDetails {
-        display_name: clean_claim(claims.get("name")),
+        name: clean_claim(claims.get("name")),
         email: clean_claim(claims.get("email")),
     };
-    (details.display_name.is_some() || details.email.is_some()).then_some(details)
+    (details.name.is_some() || details.email.is_some()).then_some(details)
 }
 
 fn clean_claim(value: Option<&Value>) -> Option<String> {
@@ -114,7 +114,7 @@ mod tests {
         assert_eq!(
             details,
             IdentityDetails {
-                display_name: Some("Example User".to_owned()),
+                name: Some("Example User".to_owned()),
                 email: Some("the.user@gmail.com".to_owned()),
             }
         );
@@ -126,21 +126,21 @@ mod tests {
         let cases = [
             (
                 IdentityDetails {
-                    display_name: Some("Example User".to_owned()),
+                    name: Some("Example User".to_owned()),
                     email: Some("the.user@gmail.com".to_owned()),
                 },
                 "Example User <the.user@gmail.com>",
             ),
             (
                 IdentityDetails {
-                    display_name: Some("Example User".to_owned()),
+                    name: Some("Example User".to_owned()),
                     email: None,
                 },
                 "Example User",
             ),
             (
                 IdentityDetails {
-                    display_name: None,
+                    name: None,
                     email: Some("the.user@gmail.com".to_owned()),
                 },
                 "<the.user@gmail.com>",
@@ -173,7 +173,7 @@ mod tests {
 
         let details = identity.read_details().unwrap().unwrap();
 
-        assert_eq!(details.display_name.as_deref(), Some("ExampleUser"));
+        assert_eq!(details.name.as_deref(), Some("ExampleUser"));
         assert_eq!(details.email.as_deref(), Some("user@example.com"));
         fs::remove_file(path).unwrap();
     }

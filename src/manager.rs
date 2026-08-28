@@ -588,7 +588,7 @@ mod tests {
 
         let details = manager.read_active_auth_details().unwrap().unwrap();
 
-        assert_eq!(details.display_name.as_deref(), Some("Example User"));
+        assert_eq!(details.name.as_deref(), Some("Example User"));
         assert_eq!(details.email.as_deref(), Some("the.user@gmail.com"));
     }
 
@@ -606,7 +606,7 @@ mod tests {
 
         let details = manager.read_active_auth_details().unwrap().unwrap();
 
-        assert_eq!(details.display_name.as_deref(), Some("Example User"));
+        assert_eq!(details.name.as_deref(), Some("Example User"));
         assert_eq!(details.email.as_deref(), Some("the.user@gmail.com"));
     }
 

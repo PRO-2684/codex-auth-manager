@@ -182,7 +182,7 @@ mod tests {
             broken: false,
         };
         let details = IdentityDetails {
-            display_name: Some("Example User".to_owned()),
+            name: Some("Example User".to_owned()),
             email: Some("the.user@gmail.com".to_owned()),
         };
 
@@ -195,7 +195,7 @@ mod tests {
     #[test]
     fn status_line_includes_active_auth_details() {
         let details = IdentityDetails {
-            display_name: Some("Example User".to_owned()),
+            name: Some("Example User".to_owned()),
             email: Some("the.user@gmail.com".to_owned()),
         };
         let status = AuthStatus::Managed {
