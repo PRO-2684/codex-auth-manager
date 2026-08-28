@@ -12,10 +12,12 @@ license = "MIT"
 authors = ["PRO-2684"]
 
 [dependencies]
+base64 = { version = "0.23.1", optional = true }
 clap = { version = "4.6.1", features = ["derive"], optional = true }
 clap_complete = { version = "4.6.5", features = ["unstable-dynamic"], optional = true }
 declerror = "0.2.1"
 macro_rules_attr = "0.2.0"
+serde_json = { version = "1.0.151", optional = true }
 
 [[bin]]
 name = "cam"
@@ -23,7 +25,8 @@ path = "src/main.rs"
 required-features = ["cli"]
 
 [features]
-cli = ["clap", "clap_complete"]
+cli = ["clap", "clap_complete", "identity-details"]
+identity-details = ["dep:base64", "dep:serde_json"]
 
 [profile.release]
 debug = false     # Disable debug information in release builds.

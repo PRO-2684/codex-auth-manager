@@ -11,6 +11,8 @@ use super::{
         normalize_path, replace_file,
     },
 };
+#[cfg(feature = "identity-details")]
+use super::{IdentityDetails, identity_details::read_auth_details};
 
 /// A manager rooted at one Codex home directory.
 #[derive(Debug, Clone)]
@@ -93,6 +95,25 @@ impl CodexAuthManager {
         Ok(AuthStatus::Unknown {
             reason: UnknownAuthReason::AuthPathIsNotFileOrSymlink,
         })
+    }
+
+    /// Read displayable account details from the active auth file's ID token.
+    ///
+    /// Invalid auth JSON, malformed tokens, and auth files without displayable claims return
+    /// `None`. Native and managed auth files are both supported.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when CAM cannot inspect the auth state or read the active auth file.
+    #[cfg(feature = "identity-details")]
+    pub fn read_active_auth_details(&self) -> Result<Option<IdentityDetails>, Error> {
+        match self.status()? {
+            AuthStatus::Native | AuthStatus::Managed { .. } => read_auth_details(&self.auth_path()),
+            AuthStatus::None
+            | AuthStatus::BrokenManaged { .. }
+            | AuthStatus::CodexHomeMissing { .. }
+            | AuthStatus::Unknown { .. } => Ok(None),
+        }
     }
 
     /// List identities from the manager directory.
@@ -557,6 +578,29 @@ mod tests {
         assert_eq!(identities[0].name.as_str(), "work");
         assert!(identities[0].active);
         assert!(identities[0].broken);
+    }
+
+    #[cfg(feature = "identity-details")]
+    #[test]
+    fn active_auth_details_follow_managed_identity_link() {
+        let temp = TempHome::new();
+        fs::create_dir_all(temp.path().join("codex-auth-manager")).unwrap();
+        fs::write(
+            temp.path().join("codex-auth-manager/personal.json"),
+            r#"{"tokens":{"id_token":"header.eyJuYW1lIjoiRXhhbXBsZSBVc2VyIiwiZW1haWwiOiJ0aGUudXNlckBnbWFpbC5jb20ifQ.signature"}}"#,
+        )
+        .unwrap();
+        create_symlink(
+            PathBuf::from("codex-auth-manager/personal.json"),
+            temp.path().join("auth.json"),
+        )
+        .unwrap();
+        let manager = CodexAuthManager::new(temp.path()).unwrap();
+
+        let details = manager.read_active_auth_details().unwrap().unwrap();
+
+        assert_eq!(details.display_name.as_deref(), Some("Example User"));
+        assert_eq!(details.email.as_deref(), Some("the.user@gmail.com"));
     }
 
     #[test]

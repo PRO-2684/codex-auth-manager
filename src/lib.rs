@@ -7,11 +7,15 @@
 mod error;
 mod fs;
 mod identity;
+#[cfg(feature = "identity-details")]
+mod identity_details;
 mod manager;
 mod status;
 
 pub use error::Error;
 pub use identity::{Identity, IdentityName};
+#[cfg(feature = "identity-details")]
+pub use identity_details::IdentityDetails;
 pub use manager::{CaptureOptions, CodexAuthManager, DetachOptions, UseOptions};
 pub use status::{AuthStatus, UnknownAuthReason};
 
