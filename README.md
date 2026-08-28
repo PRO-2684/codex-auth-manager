@@ -102,9 +102,8 @@ ID token when available. Missing or malformed details do not prevent an identity
 Enable the optional `identity-details` feature to read the same account details through the public
 library API:
 
-```toml
-[dependencies]
-codex-auth-manager = { version = "0.1.1", features = ["identity-details"] }
+```shell
+cargo add codex-auth-manager -F identity-details
 ```
 
 `Identity::read_details` reads a saved identity, while
