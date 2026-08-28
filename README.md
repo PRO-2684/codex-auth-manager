@@ -94,22 +94,14 @@ $ cam list
 * work — Example User <work@example.com>
 ```
 
-The active identity is marked with `*`. CAM reads the display name and email from each identity's
-ID token when available. Missing or malformed details do not prevent an identity from being listed.
+The active identity is marked with `*`. CAM reads the display name and email from each identity's ID token when available. Missing or malformed details do not prevent an identity from being listed.
 
 ## Library feature
 
-Enable the optional `identity-details` feature to read the same account details through the public
-library API:
+Enable the optional `identity-details` feature to read the same account details through the public library API:
 
 ```shell
 cargo add codex-auth-manager -F identity-details
 ```
 
-`Identity::read_details` reads a saved identity, while
-`CodexAuthManager::read_active_auth_details` supports both native and managed active auth files.
-The returned `IdentityDetails` implements `Display` as `Name <email>`, with either missing field
-omitted.
-
-This release renames the public Rust `IdentityName` type to `IdentitySlug` and the `Identity.name`
-field to `Identity.slug`.
+`Identity::read_details` reads a saved identity, while `CodexAuthManager::read_active_auth_details` supports both native and managed active auth files. The returned `IdentityDetails` implements `Display` as `Name <email>`, with either missing field omitted.
