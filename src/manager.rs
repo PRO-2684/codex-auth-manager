@@ -4,6 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(feature = "identity-details")]
+use super::IdentityDetails;
 use super::{
     AuthStatus, Error, Identity, IdentityName, PKG_NAME, UnknownAuthReason,
     fs::{
@@ -11,8 +13,6 @@ use super::{
         normalize_path, replace_file,
     },
 };
-#[cfg(feature = "identity-details")]
-use super::{IdentityDetails, identity_details::read_auth_details};
 
 /// A manager rooted at one Codex home directory.
 #[derive(Debug, Clone)]
@@ -108,7 +108,9 @@ impl CodexAuthManager {
     #[cfg(feature = "identity-details")]
     pub fn read_active_auth_details(&self) -> Result<Option<IdentityDetails>, Error> {
         match self.status()? {
-            AuthStatus::Native | AuthStatus::Managed { .. } => read_auth_details(&self.auth_path()),
+            AuthStatus::Native | AuthStatus::Managed { .. } => {
+                IdentityDetails::read_from(&self.auth_path())
+            }
             AuthStatus::None
             | AuthStatus::BrokenManaged { .. }
             | AuthStatus::CodexHomeMissing { .. }

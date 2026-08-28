@@ -2,6 +2,12 @@ use std::{fmt, path::PathBuf, str::FromStr};
 
 use super::Error;
 
+#[cfg(feature = "identity-details")]
+mod details;
+
+#[cfg(feature = "identity-details")]
+pub use details::IdentityDetails;
+
 /// A valid identity name.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IdentityName(String);

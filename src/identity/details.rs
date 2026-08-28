@@ -1,9 +1,10 @@
-use std::{fmt, fs};
+use std::{fmt, fs, path::Path};
 
 use base64::{Engine as _, prelude::BASE64_URL_SAFE_NO_PAD};
 use serde_json::Value;
 
-use crate::{Error, Identity};
+use super::Identity;
+use crate::Error;
 
 /// Displayable account details stored in an identity's ID token.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,6 +26,17 @@ impl fmt::Display for IdentityDetails {
     }
 }
 
+impl IdentityDetails {
+    pub(crate) fn read_from(path: &Path) -> Result<Option<Self>, Error> {
+        let auth = fs::read(path).map_err(|source| Error::Io {
+            action: "read auth details",
+            path: path.to_path_buf(),
+            source,
+        })?;
+        Ok(parse_auth_details(&auth))
+    }
+}
+
 impl Identity {
     /// Read displayable account details from this identity's ID token.
     ///
@@ -34,17 +46,8 @@ impl Identity {
     ///
     /// Returns an error when the identity file cannot be read.
     pub fn read_details(&self) -> Result<Option<IdentityDetails>, Error> {
-        read_auth_details(&self.path)
+        IdentityDetails::read_from(&self.path)
     }
-}
-
-pub fn read_auth_details(path: &std::path::Path) -> Result<Option<IdentityDetails>, Error> {
-    let auth = fs::read(path).map_err(|source| Error::Io {
-        action: "read auth details",
-        path: path.to_path_buf(),
-        source,
-    })?;
-    Ok(parse_auth_details(&auth))
 }
 
 fn parse_auth_details(auth: &[u8]) -> Option<IdentityDetails> {
