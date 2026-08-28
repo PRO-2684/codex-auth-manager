@@ -603,6 +603,24 @@ mod tests {
         assert_eq!(details.email.as_deref(), Some("the.user@gmail.com"));
     }
 
+    #[cfg(feature = "identity-details")]
+    #[test]
+    fn active_auth_details_support_native_auth_file() {
+        let temp = TempHome::new();
+        fs::create_dir_all(temp.path()).unwrap();
+        fs::write(
+            temp.path().join("auth.json"),
+            r#"{"tokens":{"id_token":"header.eyJuYW1lIjoiRXhhbXBsZSBVc2VyIiwiZW1haWwiOiJ0aGUudXNlckBnbWFpbC5jb20ifQ.signature"}}"#,
+        )
+        .unwrap();
+        let manager = CodexAuthManager::new(temp.path()).unwrap();
+
+        let details = manager.read_active_auth_details().unwrap().unwrap();
+
+        assert_eq!(details.display_name.as_deref(), Some("Example User"));
+        assert_eq!(details.email.as_deref(), Some("the.user@gmail.com"));
+    }
+
     #[test]
     fn detach_force_removes_broken_managed_link() {
         let temp = TempHome::new();

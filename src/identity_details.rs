@@ -85,6 +85,8 @@ mod tests {
 
     use crate::{Identity, IdentityDetails, IdentityName};
 
+    use super::parse_auth_details;
+
     #[test]
     fn identity_reads_name_and_email_from_id_token() {
         let unique = SystemTime::now()
@@ -171,5 +173,19 @@ mod tests {
         assert_eq!(details.display_name.as_deref(), Some("ExampleUser"));
         assert_eq!(details.email.as_deref(), Some("user@example.com"));
         fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn malformed_auth_details_are_absent() {
+        let cases: [&[u8]; 4] = [
+            b"not json",
+            br#"{"tokens":{}}"#,
+            br#"{"tokens":{"id_token":"not-a-jwt"}}"#,
+            br#"{"tokens":{"id_token":"header.invalid.signature"}}"#,
+        ];
+
+        for auth in cases {
+            assert_eq!(parse_auth_details(auth), None);
+        }
     }
 }

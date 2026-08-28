@@ -34,8 +34,8 @@ cargo install codex-auth-manager --features=cli
 
 `cam` manages named Codex auth identities. Each identity is stored under `$CODEX_HOME/codex-auth-manager/`, and CAM switches which identity Codex sees at `$CODEX_HOME/auth.json`.
 
-- `cam` / `cam status` — show the current auth state
-- `cam list` — list saved identities
+- `cam` / `cam status` — show the current auth state and available account details
+- `cam list` — list saved identities and available account details
 - `cam capture <identity> [--force]` — save the current native Codex auth file as an identity and make it active
 - `cam use <identity> [--force]` — make an existing identity active
 - `cam detach [--force]` — stop using the active CAM-managed identity
@@ -90,8 +90,24 @@ To list all saved identities:
 
 ```shell
 $ cam list
-  personal
-* work
+  personal — Example User <personal@example.com>
+* work — Example User <work@example.com>
 ```
 
-The active identity will be marked with `*`.
+The active identity is marked with `*`. CAM reads the display name and email from each identity's
+ID token when available. Missing or malformed details do not prevent an identity from being listed.
+
+## Library feature
+
+Enable the optional `identity-details` feature to read the same account details through the public
+library API:
+
+```toml
+[dependencies]
+codex-auth-manager = { version = "0.1.1", features = ["identity-details"] }
+```
+
+`Identity::read_details` reads a saved identity, while
+`CodexAuthManager::read_active_auth_details` supports both native and managed active auth files.
+The returned `IdentityDetails` implements `Display` as `Name <email>`, with either missing field
+omitted.
