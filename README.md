@@ -8,7 +8,7 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/codex-auth-manager?logo=rust)](https://crates.io/crates/codex-auth-manager)
 [![docs.rs](https://img.shields.io/docsrs/codex-auth-manager?logo=rust)](https://docs.rs/codex-auth-manager)
 
-A deadly simple Codex auth manager / account switcher. Nothing more, nothing less.
+A deadly simple Codex auth manager / account switcher. Nothing more, nothing less. Change your Codex auth while keeping all your settings, skills and history.
 
 ![overview](./images/overview.svg)
 
