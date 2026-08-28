@@ -90,11 +90,11 @@ To list all saved identities:
 
 ```shell
 $ cam list
-  personal — Example User <personal@example.com>
-* work — Example User <work@example.com>
+  personal (Example User <personal@example.com>)
+* work (Example User <work@example.com>)
 ```
 
-The active identity is marked with `*`. CAM reads the display name and email from each identity's ID token when available. Missing or malformed details do not prevent an identity from being listed.
+The active identity is marked with `*`. CAM reads the display name and email from each identity's ID token when available and includes them in command results. Missing or malformed details do not prevent commands from succeeding.
 
 ## Library feature
 

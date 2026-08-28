@@ -42,33 +42,43 @@ pub fn run() -> Result<(), CliError> {
         Command::Capture { slug, force } => {
             let manager = CodexAuthManager::from_env()?;
             manager.capture(&slug, CaptureOptions { force })?;
-            println!("Captured identity: {slug}");
+            let details = manager.read_active_auth_details().ok().flatten();
+            println!(
+                "{}",
+                format_action(&format!("Captured identity: {slug}"), details.as_ref())
+            );
             Ok(())
         }
         Command::Use { slug, force } => {
             let manager = CodexAuthManager::from_env()?;
             manager.use_identity(&slug, UseOptions { force })?;
-            println!("Active identity: {slug}");
+            let details = manager.read_active_auth_details().ok().flatten();
+            println!(
+                "{}",
+                format_action(&format!("Active identity: {slug}"), details.as_ref())
+            );
             Ok(())
         }
         Command::Detach { force } => {
             let manager = CodexAuthManager::from_env()?;
             let status = manager.status()?;
+            let details = manager.read_active_auth_details().ok().flatten();
             manager.detach(DetachOptions { force })?;
-            match status {
+            let message = match status {
                 AuthStatus::Managed { slug } => {
-                    println!("Detached from active identity: {slug}");
+                    Some(format!("Detached from active identity: {slug}"))
                 }
                 AuthStatus::BrokenManaged { slug } => {
-                    println!("Detached from broken identity: {slug}");
+                    Some(format!("Detached from broken identity: {slug}"))
                 }
-                AuthStatus::Native if force => {
-                    println!("Discarded native auth file");
-                }
+                AuthStatus::Native if force => Some("Discarded native auth file".to_owned()),
                 AuthStatus::None | AuthStatus::CodexHomeMissing { .. } => {
-                    println!("No active identity");
+                    Some("No active identity".to_owned())
                 }
-                AuthStatus::Native | AuthStatus::Unknown { .. } => {}
+                AuthStatus::Native | AuthStatus::Unknown { .. } => None,
+            };
+            if let Some(message) = message {
+                println!("{}", format_action(&message, details.as_ref()));
             }
             Ok(())
         }
@@ -78,13 +88,21 @@ pub fn run() -> Result<(), CliError> {
 fn format_identity(identity: &Identity, details: Option<&IdentityDetails>) -> String {
     let marker = if identity.active { "*" } else { " " };
     let broken = if identity.broken { " (broken)" } else { "" };
-    let details = details.map_or_else(String::new, |details| format!(" — {details}"));
+    let details = format_details(details);
     format!("{marker} {}{broken}{details}", identity.slug)
 }
 
 fn format_status(status: &AuthStatus, details: Option<&IdentityDetails>) -> String {
-    let details = details.map_or_else(String::new, |details| format!(" — {details}"));
+    let details = format_details(details);
     format!("{status}{details}")
+}
+
+fn format_action(message: &str, details: Option<&IdentityDetails>) -> String {
+    format!("{message}{}", format_details(details))
+}
+
+fn format_details(details: Option<&IdentityDetails>) -> String {
+    details.map_or_else(String::new, |details| format!(" ({details})"))
 }
 
 #[derive(Debug, Parser)]
@@ -171,7 +189,40 @@ mod tests {
 
     use codex_auth_manager::{AuthStatus, Identity, IdentityDetails, IdentitySlug};
 
-    use super::{format_identity, format_status};
+    use super::{format_action, format_identity, format_status};
+
+    fn example_details() -> IdentityDetails {
+        IdentityDetails {
+            name: Some("Example User".to_owned()),
+            email: Some("the.user@gmail.com".to_owned()),
+        }
+    }
+
+    #[test]
+    fn state_change_lines_include_identity_details() {
+        let details = example_details();
+
+        for (message, expected) in [
+            (
+                "Captured identity: personal",
+                "Captured identity: personal (Example User <the.user@gmail.com>)",
+            ),
+            (
+                "Active identity: personal",
+                "Active identity: personal (Example User <the.user@gmail.com>)",
+            ),
+            (
+                "Detached from active identity: personal",
+                "Detached from active identity: personal (Example User <the.user@gmail.com>)",
+            ),
+            (
+                "Discarded native auth file",
+                "Discarded native auth file (Example User <the.user@gmail.com>)",
+            ),
+        ] {
+            assert_eq!(format_action(message, Some(&details)), expected);
+        }
+    }
 
     #[test]
     fn list_line_includes_identity_details() {
@@ -181,30 +232,24 @@ mod tests {
             active: true,
             broken: false,
         };
-        let details = IdentityDetails {
-            name: Some("Example User".to_owned()),
-            email: Some("the.user@gmail.com".to_owned()),
-        };
+        let details = example_details();
 
         assert_eq!(
             format_identity(&identity, Some(&details)),
-            "* personal — Example User <the.user@gmail.com>"
+            "* personal (Example User <the.user@gmail.com>)"
         );
     }
 
     #[test]
     fn status_line_includes_active_auth_details() {
-        let details = IdentityDetails {
-            name: Some("Example User".to_owned()),
-            email: Some("the.user@gmail.com".to_owned()),
-        };
+        let details = example_details();
         let status = AuthStatus::Managed {
             slug: IdentitySlug::try_from("personal").unwrap(),
         };
 
         assert_eq!(
             format_status(&status, Some(&details)),
-            "Active identity: personal — Example User <the.user@gmail.com>"
+            "Active identity: personal (Example User <the.user@gmail.com>)"
         );
     }
 }
