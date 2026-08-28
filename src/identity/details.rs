@@ -1,18 +1,28 @@
 use std::{fmt, fs, path::Path};
 
 use base64::{Engine as _, prelude::BASE64_URL_SAFE_NO_PAD};
-use serde_json::Value;
+use serde::Deserialize;
 
 use super::Identity;
 use crate::Error;
 
 /// Displayable account details stored in an identity's ID token.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct IdentityDetails {
     /// Account display name.
     pub name: Option<String>,
     /// Account email address.
     pub email: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct AuthFile {
+    tokens: Tokens,
+}
+
+#[derive(Deserialize)]
+struct Tokens {
+    id_token: String,
 }
 
 impl fmt::Display for IdentityDetails {
@@ -51,9 +61,8 @@ impl Identity {
 }
 
 fn parse_auth_details(auth: &[u8]) -> Option<IdentityDetails> {
-    let auth: Value = serde_json::from_slice(auth).ok()?;
-    let token = auth.pointer("/tokens/id_token")?.as_str()?;
-    let mut segments = token.split('.');
+    let auth: AuthFile = serde_json::from_slice(auth).ok()?;
+    let mut segments = auth.tokens.id_token.split('.');
     segments.next()?;
     let payload = segments.next()?;
     segments.next()?;
@@ -61,17 +70,14 @@ fn parse_auth_details(auth: &[u8]) -> Option<IdentityDetails> {
         return None;
     }
     let payload = BASE64_URL_SAFE_NO_PAD.decode(payload).ok()?;
-    let claims: Value = serde_json::from_slice(&payload).ok()?;
-    let details = IdentityDetails {
-        name: clean_claim(claims.get("name")),
-        email: clean_claim(claims.get("email")),
-    };
+    let mut details: IdentityDetails = serde_json::from_slice(&payload).ok()?;
+    details.name = clean_claim(details.name);
+    details.email = clean_claim(details.email);
     (details.name.is_some() || details.email.is_some()).then_some(details)
 }
 
-fn clean_claim(value: Option<&Value>) -> Option<String> {
+fn clean_claim(value: Option<String>) -> Option<String> {
     let value: String = value?
-        .as_str()?
         .chars()
         .filter(|character| !character.is_control())
         .collect();
@@ -89,6 +95,22 @@ mod tests {
     use crate::{Identity, IdentityDetails, IdentitySlug};
 
     use super::parse_auth_details;
+
+    #[test]
+    fn identity_details_deserialize_known_claims_and_ignore_others() {
+        let details: IdentityDetails = serde_json::from_str(
+            r#"{"name":"Example User","email":"the.user@gmail.com","ignored":true}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            details,
+            IdentityDetails {
+                name: Some("Example User".to_owned()),
+                email: Some("the.user@gmail.com".to_owned()),
+            }
+        );
+    }
 
     #[test]
     fn identity_reads_name_and_email_from_id_token() {
