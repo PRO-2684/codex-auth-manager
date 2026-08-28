@@ -1,23 +1,23 @@
 # Codex Auth Manager
 
-Codex Auth Manager manages named Codex authentication files and switches which one Codex uses.
+Codex Auth Manager manages saved Codex authentication files identified by identity slugs and switches which one Codex uses.
 
 ## Language
 
 **Identity**:
-A named saved Codex authentication file. Each **Identity** stores the auth state Codex would normally keep in `auth.json`.
+A saved Codex authentication file identified by an **Identity slug**. Each **Identity** stores the auth state Codex would normally keep in `auth.json`.
 _Avoid_: Profile, account, slot, name
 
-**Identity name**:
-The user-facing name of an **Identity**. CAM stores each identity as `<identity name>.json`, so `.json` can be part of the identity name.
-_Avoid_: Filename, path, profile name
+**Identity slug**:
+The user-defined portable identifier of an **Identity**. CAM stores each identity as `<identity slug>.json`, so `.json` can be part of the identity slug.
+_Avoid_: Filename, path, profile name, identity name
 
 **Active identity**:
 The **Identity** currently selected for Codex to use.
 _Avoid_: Current profile, selected account, active slot
 
 **Native auth file**:
-The regular Codex `auth.json` file created by Codex itself, before CAM captures it into an **Auth slot**.
+The regular Codex `auth.json` file created by Codex itself, before CAM captures it into an **Identity**.
 _Avoid_: Unmanaged profile, raw auth
 
 **Managed auth file**:
@@ -25,7 +25,7 @@ An auth file stored by CAM as an **Identity**.
 _Avoid_: Profile file, account file, slot file
 
 **Capture**:
-The operation that converts a **Native auth file** into a named **Identity** and makes that identity active.
+The operation that converts a **Native auth file** into an **Identity** with an identity slug and makes that identity active.
 _Avoid_: Takeover, name
 
 **Use**:
