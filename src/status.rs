@@ -1,6 +1,6 @@
 use std::{fmt, path::PathBuf};
 
-use super::IdentityName;
+use super::IdentitySlug;
 
 /// Current auth status.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,13 +16,13 @@ pub enum AuthStatus {
     Native,
     /// `auth.json` points to a usable managed identity.
     Managed {
-        /// Active identity.
-        identity: IdentityName,
+        /// Active identity slug.
+        slug: IdentitySlug,
     },
     /// `auth.json` points to a managed identity that is missing or unusable.
     BrokenManaged {
-        /// Broken active identity.
-        identity: IdentityName,
+        /// Broken active identity slug.
+        slug: IdentitySlug,
     },
     /// CAM cannot safely classify the auth state.
     Unknown {
@@ -37,9 +37,9 @@ impl fmt::Display for AuthStatus {
             Self::CodexHomeMissing { path } => write!(f, "Codex home missing: {}", path.display()),
             Self::None => write!(f, "No auth file"),
             Self::Native => write!(f, "Native auth file"),
-            Self::Managed { identity } => write!(f, "Active identity: {identity}"),
-            Self::BrokenManaged { identity } => {
-                write!(f, "Active identity is broken: {identity}")
+            Self::Managed { slug } => write!(f, "Active identity: {slug}"),
+            Self::BrokenManaged { slug } => {
+                write!(f, "Active identity is broken: {slug}")
             }
             Self::Unknown { reason } => write!(f, "Unknown auth state: {reason}"),
         }
@@ -53,8 +53,8 @@ pub enum UnknownAuthReason {
     AuthPathIsNotFileOrSymlink,
     /// The `auth.json` symlink points outside CAM's manager directory.
     SymlinkTargetOutsideManagerDir,
-    /// The `auth.json` symlink target does not map to a valid identity name.
-    SymlinkTargetHasInvalidIdentityName,
+    /// The `auth.json` symlink target does not map to a valid identity slug.
+    SymlinkTargetHasInvalidIdentitySlug,
 }
 
 impl fmt::Display for UnknownAuthReason {
@@ -64,8 +64,8 @@ impl fmt::Display for UnknownAuthReason {
             Self::SymlinkTargetOutsideManagerDir => {
                 write!(f, "symlink target is outside codex-auth-manager")
             }
-            Self::SymlinkTargetHasInvalidIdentityName => {
-                write!(f, "symlink target has invalid identity name")
+            Self::SymlinkTargetHasInvalidIdentitySlug => {
+                write!(f, "symlink target has invalid identity slug")
             }
         }
     }

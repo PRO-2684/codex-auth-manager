@@ -13,7 +13,7 @@ mod status;
 pub use error::Error;
 #[cfg(feature = "identity-details")]
 pub use identity::IdentityDetails;
-pub use identity::{Identity, IdentityName};
+pub use identity::{Identity, IdentitySlug};
 pub use manager::{CaptureOptions, CodexAuthManager, DetachOptions, UseOptions};
 pub use status::{AuthStatus, UnknownAuthReason};
 

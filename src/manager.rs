@@ -7,7 +7,7 @@ use std::{
 #[cfg(feature = "identity-details")]
 use super::IdentityDetails;
 use super::{
-    AuthStatus, Error, Identity, IdentityName, PKG_NAME, UnknownAuthReason,
+    AuthStatus, Error, Identity, IdentitySlug, PKG_NAME, UnknownAuthReason,
     fs::{
         AUTH_FILE, STORAGE_SUFFIX, absolutize, create_symlink, is_broken_identity_path,
         normalize_path, replace_file,
@@ -128,8 +128,8 @@ impl CodexAuthManager {
     pub fn list(&self) -> Result<Vec<Identity>, Error> {
         let status = self.status()?;
         let active = match &status {
-            AuthStatus::Managed { identity } | AuthStatus::BrokenManaged { identity } => Some((
-                identity.clone(),
+            AuthStatus::Managed { slug } | AuthStatus::BrokenManaged { slug } => Some((
+                slug.clone(),
                 matches!(status, AuthStatus::BrokenManaged { .. }),
             )),
             AuthStatus::None
@@ -143,10 +143,10 @@ impl CodexAuthManager {
         let entries = match fs::read_dir(&manager_dir) {
             Ok(entries) => entries,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                if let Some((identity, broken)) = active {
+                if let Some((slug, broken)) = active {
                     identities.push(Identity {
-                        path: self.identity_path(&identity),
-                        name: identity,
+                        path: self.identity_path(&slug),
+                        slug,
                         active: true,
                         broken,
                     });
@@ -172,39 +172,39 @@ impl CodexAuthManager {
             let Some(file_name) = file_name.to_str() else {
                 continue;
             };
-            let Some(name) = file_name.strip_suffix(STORAGE_SUFFIX) else {
+            let Some(slug) = file_name.strip_suffix(STORAGE_SUFFIX) else {
                 continue;
             };
-            let Ok(name) = IdentityName::try_from(name) else {
+            let Ok(slug) = IdentitySlug::try_from(slug) else {
                 continue;
             };
             let path = entry.path();
             let broken = is_broken_identity_path(&path)?;
             let active_here = active
                 .as_ref()
-                .is_some_and(|(active_name, _)| active_name == &name);
+                .is_some_and(|(active_slug, _)| active_slug == &slug);
             identities.push(Identity {
                 path,
-                name,
+                slug,
                 active: active_here,
                 broken,
             });
         }
 
-        if let Some((active_name, active_broken)) = active
+        if let Some((active_slug, active_broken)) = active
             && !identities
                 .iter()
-                .any(|identity| identity.name == active_name)
+                .any(|identity| identity.slug == active_slug)
         {
             identities.push(Identity {
-                path: self.identity_path(&active_name),
-                name: active_name,
+                path: self.identity_path(&active_slug),
+                slug: active_slug,
                 active: true,
                 broken: active_broken,
             });
         }
 
-        identities.sort_by(|left, right| left.name.cmp(&right.name));
+        identities.sort_by(|left, right| left.slug.cmp(&right.slug));
         Ok(identities)
     }
 
@@ -214,7 +214,7 @@ impl CodexAuthManager {
     ///
     /// Returns an error when there is no native auth file, the destination identity already
     /// exists without `force`, the destination is broken, or a filesystem operation fails.
-    pub fn capture(&self, identity: &IdentityName, options: CaptureOptions) -> Result<(), Error> {
+    pub fn capture(&self, slug: &IdentitySlug, options: CaptureOptions) -> Result<(), Error> {
         self.require_codex_home()?;
         match self.status()? {
             AuthStatus::Native => {}
@@ -234,18 +234,14 @@ impl CodexAuthManager {
             source,
         })?;
 
-        let identity_path = self.identity_path(identity);
+        let identity_path = self.identity_path(slug);
         match fs::symlink_metadata(&identity_path) {
             Ok(metadata) if metadata.file_type().is_file() && options.force => {}
             Ok(metadata) if metadata.file_type().is_file() => {
-                return Err(Error::IdentityAlreadyExists {
-                    name: identity.clone(),
-                });
+                return Err(Error::IdentityAlreadyExists { slug: slug.clone() });
             }
             Ok(_) => {
-                return Err(Error::IdentityBroken {
-                    name: identity.clone(),
-                });
+                return Err(Error::IdentityBroken { slug: slug.clone() });
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(source) => {
@@ -258,7 +254,7 @@ impl CodexAuthManager {
         }
 
         let auth_path = self.auth_path();
-        let tmp_path = self.create_temporary_auth_symlink(identity)?;
+        let tmp_path = self.create_temporary_auth_symlink(slug)?;
         replace_file(&auth_path, &identity_path).map_err(|source| Error::Io {
             action: "capture native auth file",
             path: auth_path.clone(),
@@ -282,9 +278,9 @@ impl CodexAuthManager {
     ///
     /// Returns an error when the identity is missing or broken, a native auth file would be
     /// discarded without `force`, the auth state is unknown, or a filesystem operation fails.
-    pub fn use_identity(&self, identity: &IdentityName, options: UseOptions) -> Result<(), Error> {
+    pub fn use_identity(&self, slug: &IdentitySlug, options: UseOptions) -> Result<(), Error> {
         self.require_codex_home()?;
-        self.require_usable_identity(identity)?;
+        self.require_usable_identity(slug)?;
 
         match self.status()? {
             AuthStatus::None | AuthStatus::Managed { .. } | AuthStatus::BrokenManaged { .. } => {}
@@ -300,7 +296,7 @@ impl CodexAuthManager {
             AuthStatus::Unknown { reason } => return Err(Error::UnknownAuthState { reason }),
         }
 
-        self.replace_auth_symlink(identity)
+        self.replace_auth_symlink(slug)
     }
 
     /// Detach Codex from the active managed identity.
@@ -316,7 +312,7 @@ impl CodexAuthManager {
             AuthStatus::BrokenManaged { .. } | AuthStatus::Native if options.force => {
                 self.remove_auth_file()
             }
-            AuthStatus::BrokenManaged { identity } => Err(Error::IdentityBroken { name: identity }),
+            AuthStatus::BrokenManaged { slug } => Err(Error::IdentityBroken { slug }),
             AuthStatus::Native => Err(Error::NativeAuthExists),
             AuthStatus::Unknown { reason } => Err(Error::UnknownAuthState { reason }),
         }
@@ -330,13 +326,12 @@ impl CodexAuthManager {
         self.codex_home.join(PKG_NAME)
     }
 
-    fn identity_path(&self, identity: &IdentityName) -> PathBuf {
-        self.manager_dir()
-            .join(format!("{identity}{STORAGE_SUFFIX}"))
+    fn identity_path(&self, slug: &IdentitySlug) -> PathBuf {
+        self.manager_dir().join(format!("{slug}{STORAGE_SUFFIX}"))
     }
 
-    fn relative_identity_path(identity: &IdentityName) -> PathBuf {
-        PathBuf::from(PKG_NAME).join(format!("{identity}{STORAGE_SUFFIX}"))
+    fn relative_identity_path(slug: &IdentitySlug) -> PathBuf {
+        PathBuf::from(PKG_NAME).join(format!("{slug}{STORAGE_SUFFIX}"))
     }
 
     fn require_codex_home(&self) -> Result<(), Error> {
@@ -349,17 +344,13 @@ impl CodexAuthManager {
         }
     }
 
-    fn require_usable_identity(&self, identity: &IdentityName) -> Result<(), Error> {
-        let path = self.identity_path(identity);
+    fn require_usable_identity(&self, slug: &IdentitySlug) -> Result<(), Error> {
+        let path = self.identity_path(slug);
         match fs::symlink_metadata(&path) {
             Ok(metadata) if metadata.file_type().is_file() => Ok(()),
-            Ok(_) => Err(Error::IdentityBroken {
-                name: identity.clone(),
-            }),
+            Ok(_) => Err(Error::IdentityBroken { slug: slug.clone() }),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                Err(Error::IdentityNotFound {
-                    name: identity.clone(),
-                })
+                Err(Error::IdentityNotFound { slug: slug.clone() })
             }
             Err(source) => Err(Error::Io {
                 action: "inspect identity",
@@ -394,25 +385,25 @@ impl CodexAuthManager {
         }
         let Some(file_name) = relative.file_name().and_then(|name| name.to_str()) else {
             return Ok(AuthStatus::Unknown {
-                reason: UnknownAuthReason::SymlinkTargetHasInvalidIdentityName,
+                reason: UnknownAuthReason::SymlinkTargetHasInvalidIdentitySlug,
             });
         };
-        let Some(name) = file_name.strip_suffix(STORAGE_SUFFIX) else {
+        let Some(slug) = file_name.strip_suffix(STORAGE_SUFFIX) else {
             return Ok(AuthStatus::Unknown {
-                reason: UnknownAuthReason::SymlinkTargetHasInvalidIdentityName,
+                reason: UnknownAuthReason::SymlinkTargetHasInvalidIdentitySlug,
             });
         };
-        let identity = IdentityName::try_from(name).map_err(|_| Error::UnknownAuthState {
-            reason: UnknownAuthReason::SymlinkTargetHasInvalidIdentityName,
+        let slug = IdentitySlug::try_from(slug).map_err(|_| Error::UnknownAuthState {
+            reason: UnknownAuthReason::SymlinkTargetHasInvalidIdentitySlug,
         })?;
         match fs::symlink_metadata(&target) {
-            Ok(metadata) if metadata.file_type().is_file() => Ok(AuthStatus::Managed { identity }),
-            Ok(_) | Err(_) => Ok(AuthStatus::BrokenManaged { identity }),
+            Ok(metadata) if metadata.file_type().is_file() => Ok(AuthStatus::Managed { slug }),
+            Ok(_) | Err(_) => Ok(AuthStatus::BrokenManaged { slug }),
         }
     }
 
-    fn replace_auth_symlink(&self, identity: &IdentityName) -> Result<(), Error> {
-        let tmp_path = self.create_temporary_auth_symlink(identity)?;
+    fn replace_auth_symlink(&self, slug: &IdentitySlug) -> Result<(), Error> {
+        let tmp_path = self.create_temporary_auth_symlink(slug)?;
         replace_file(&tmp_path, &self.auth_path()).map_err(|source| Error::Io {
             action: "activate identity",
             path: self.auth_path(),
@@ -420,7 +411,7 @@ impl CodexAuthManager {
         })
     }
 
-    fn create_temporary_auth_symlink(&self, identity: &IdentityName) -> Result<PathBuf, Error> {
+    fn create_temporary_auth_symlink(&self, slug: &IdentitySlug) -> Result<PathBuf, Error> {
         let tmp_path = self.codex_home.join(format!(".{AUTH_FILE}.tmp"));
         if tmp_path.exists() || tmp_path.is_symlink() {
             fs::remove_file(&tmp_path).map_err(|source| Error::Io {
@@ -429,7 +420,7 @@ impl CodexAuthManager {
                 source,
             })?;
         }
-        create_symlink(Self::relative_identity_path(identity), &tmp_path).map_err(|source| {
+        create_symlink(Self::relative_identity_path(slug), &tmp_path).map_err(|source| {
             Error::Io {
                 action: "create temporary auth symlink",
                 path: tmp_path.clone(),
@@ -478,7 +469,7 @@ mod tests {
     };
 
     use crate::{
-        AuthStatus, CaptureOptions, CodexAuthManager, DetachOptions, Error, IdentityName,
+        AuthStatus, CaptureOptions, CodexAuthManager, DetachOptions, Error, IdentitySlug,
         UseOptions, fs::create_symlink,
     };
 
@@ -488,17 +479,13 @@ mod tests {
         fs::create_dir_all(temp.path()).unwrap();
         fs::write(temp.path().join("auth.json"), "{}").unwrap();
         let manager = CodexAuthManager::new(temp.path()).unwrap();
-        let identity = IdentityName::try_from("work").unwrap();
+        let slug = IdentitySlug::try_from("work").unwrap();
 
-        manager
-            .capture(&identity, CaptureOptions::default())
-            .unwrap();
+        manager.capture(&slug, CaptureOptions::default()).unwrap();
 
         assert_eq!(
             manager.status().unwrap(),
-            AuthStatus::Managed {
-                identity: identity.clone()
-            }
+            AuthStatus::Managed { slug: slug.clone() }
         );
         assert_eq!(
             fs::read_to_string(temp.path().join("codex-auth-manager/work.json")).unwrap(),
@@ -510,7 +497,7 @@ mod tests {
         );
         let identities = manager.list().unwrap();
         assert_eq!(identities.len(), 1);
-        assert_eq!(identities[0].name, identity);
+        assert_eq!(identities[0].slug, slug);
         assert!(identities[0].active);
         assert!(!identities[0].broken);
     }
@@ -522,14 +509,14 @@ mod tests {
         fs::write(temp.path().join("auth.json"), "new").unwrap();
         fs::write(temp.path().join("codex-auth-manager/work.json"), "old").unwrap();
         let manager = CodexAuthManager::new(temp.path()).unwrap();
-        let identity = IdentityName::try_from("work").unwrap();
+        let slug = IdentitySlug::try_from("work").unwrap();
 
         assert!(matches!(
-            manager.capture(&identity, CaptureOptions::default()),
+            manager.capture(&slug, CaptureOptions::default()),
             Err(Error::IdentityAlreadyExists { .. })
         ));
         manager
-            .capture(&identity, CaptureOptions { force: true })
+            .capture(&slug, CaptureOptions { force: true })
             .unwrap();
 
         assert_eq!(
@@ -545,17 +532,17 @@ mod tests {
         fs::write(temp.path().join("auth.json"), "native").unwrap();
         fs::write(temp.path().join("codex-auth-manager/work.json"), "work").unwrap();
         let manager = CodexAuthManager::new(temp.path()).unwrap();
-        let identity = IdentityName::try_from("work").unwrap();
+        let slug = IdentitySlug::try_from("work").unwrap();
 
         assert!(matches!(
-            manager.use_identity(&identity, UseOptions::default()),
+            manager.use_identity(&slug, UseOptions::default()),
             Err(Error::NativeAuthExists)
         ));
         manager
-            .use_identity(&identity, UseOptions { force: true })
+            .use_identity(&slug, UseOptions { force: true })
             .unwrap();
 
-        assert_eq!(manager.status().unwrap(), AuthStatus::Managed { identity });
+        assert_eq!(manager.status().unwrap(), AuthStatus::Managed { slug });
     }
 
     #[test]
@@ -572,12 +559,12 @@ mod tests {
         assert_eq!(
             manager.status().unwrap(),
             AuthStatus::BrokenManaged {
-                identity: IdentityName::try_from("work").unwrap()
+                slug: IdentitySlug::try_from("work").unwrap()
             }
         );
         let identities = manager.list().unwrap();
         assert_eq!(identities.len(), 1);
-        assert_eq!(identities[0].name.as_str(), "work");
+        assert_eq!(identities[0].slug.as_str(), "work");
         assert!(identities[0].active);
         assert!(identities[0].broken);
     }

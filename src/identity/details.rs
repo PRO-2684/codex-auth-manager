@@ -86,7 +86,7 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use crate::{Identity, IdentityDetails, IdentityName};
+    use crate::{Identity, IdentityDetails, IdentitySlug};
 
     use super::parse_auth_details;
 
@@ -103,7 +103,7 @@ mod tests {
         )
         .unwrap();
         let identity = Identity {
-            name: IdentityName::try_from("personal").unwrap(),
+            slug: IdentitySlug::try_from("personal").unwrap(),
             path: path.clone(),
             active: false,
             broken: false,
@@ -165,7 +165,7 @@ mod tests {
         )
         .unwrap();
         let identity = Identity {
-            name: IdentityName::try_from("personal").unwrap(),
+            slug: IdentitySlug::try_from("personal").unwrap(),
             path: path.clone(),
             active: false,
             broken: false,

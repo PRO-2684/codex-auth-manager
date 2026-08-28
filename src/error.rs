@@ -3,7 +3,7 @@ use std::{env::VarError, io::Error as IoError, path::PathBuf};
 use declerror::error_enum;
 use macro_rules_attr::apply;
 
-use super::{IdentityName, UnknownAuthReason};
+use super::{IdentitySlug, UnknownAuthReason};
 
 /// Error returned by the library API.
 #[apply(error_enum)]
@@ -30,29 +30,29 @@ pub enum Error {
         /// Source filesystem error.
         source: std::io::Error,
     },
-    /// Identity name is invalid.
-    #[error("invalid identity name: {name}")]
-    InvalidIdentityName {
-        /// Invalid name.
-        name: String,
+    /// Identity slug is invalid.
+    #[error("invalid identity slug: {slug}")]
+    InvalidIdentitySlug {
+        /// Invalid slug.
+        slug: String,
     },
     /// Identity does not exist.
-    #[error("identity not found: {name}")]
+    #[error("identity not found: {slug}")]
     IdentityNotFound {
-        /// Missing identity name.
-        name: IdentityName,
+        /// Missing identity slug.
+        slug: IdentitySlug,
     },
     /// Identity already exists.
-    #[error("identity already exists: {name}")]
+    #[error("identity already exists: {slug}")]
     IdentityAlreadyExists {
-        /// Existing identity name.
-        name: IdentityName,
+        /// Existing identity slug.
+        slug: IdentitySlug,
     },
     /// Identity entry exists but is unusable.
-    #[error("identity is broken: {name}")]
+    #[error("identity is broken: {slug}")]
     IdentityBroken {
-        /// Broken identity name.
-        name: IdentityName,
+        /// Broken identity slug.
+        slug: IdentitySlug,
     },
     /// Native auth file exists and would be discarded.
     #[error("native auth file exists; capture it first or pass --force to discard it")]

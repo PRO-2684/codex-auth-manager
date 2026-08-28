@@ -4,7 +4,7 @@ use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{ArgValueCompleter, CompleteEnv, CompletionCandidate};
 use codex_auth_manager::{
     AuthStatus, CaptureOptions, CodexAuthManager, DetachOptions, Error, Identity, IdentityDetails,
-    IdentityName, PKG_DESCRIPTION, UseOptions,
+    IdentitySlug, PKG_DESCRIPTION, UseOptions,
 };
 
 pub fn complete_from_env() {
@@ -39,16 +39,16 @@ pub fn run() -> Result<(), CliError> {
             }
             Ok(())
         }
-        Command::Capture { identity, force } => {
+        Command::Capture { slug, force } => {
             let manager = CodexAuthManager::from_env()?;
-            manager.capture(&identity, CaptureOptions { force })?;
-            println!("Captured identity: {identity}");
+            manager.capture(&slug, CaptureOptions { force })?;
+            println!("Captured identity: {slug}");
             Ok(())
         }
-        Command::Use { identity, force } => {
+        Command::Use { slug, force } => {
             let manager = CodexAuthManager::from_env()?;
-            manager.use_identity(&identity, UseOptions { force })?;
-            println!("Active identity: {identity}");
+            manager.use_identity(&slug, UseOptions { force })?;
+            println!("Active identity: {slug}");
             Ok(())
         }
         Command::Detach { force } => {
@@ -56,11 +56,11 @@ pub fn run() -> Result<(), CliError> {
             let status = manager.status()?;
             manager.detach(DetachOptions { force })?;
             match status {
-                AuthStatus::Managed { identity } => {
-                    println!("Detached from active identity: {identity}");
+                AuthStatus::Managed { slug } => {
+                    println!("Detached from active identity: {slug}");
                 }
-                AuthStatus::BrokenManaged { identity } => {
-                    println!("Detached from broken identity: {identity}");
+                AuthStatus::BrokenManaged { slug } => {
+                    println!("Detached from broken identity: {slug}");
                 }
                 AuthStatus::Native if force => {
                     println!("Discarded native auth file");
@@ -79,7 +79,7 @@ fn format_identity(identity: &Identity, details: Option<&IdentityDetails>) -> St
     let marker = if identity.active { "*" } else { " " };
     let broken = if identity.broken { " (broken)" } else { "" };
     let details = details.map_or_else(String::new, |details| format!(" — {details}"));
-    format!("{marker} {}{broken}{details}", identity.name)
+    format!("{marker} {}{broken}{details}", identity.slug)
 }
 
 fn format_status(status: &AuthStatus, details: Option<&IdentityDetails>) -> String {
@@ -103,18 +103,18 @@ enum Command {
     List,
     /// Save the current native Codex auth file as an identity and make it active.
     Capture {
-        /// Identity to create or overwrite.
+        /// Identity slug to create or overwrite.
         #[arg(add = ArgValueCompleter::new(identity_completer))]
-        identity: IdentityName,
+        slug: IdentitySlug,
         /// Overwrite an existing regular identity file.
         #[arg(long)]
         force: bool,
     },
     /// Make an existing identity active.
     Use {
-        /// Identity to activate.
+        /// Identity slug to activate.
         #[arg(add = ArgValueCompleter::new(identity_completer))]
-        identity: IdentityName,
+        slug: IdentitySlug,
         /// Discard a blocking native auth file.
         #[arg(long)]
         force: bool,
@@ -141,9 +141,9 @@ fn identity_completer(current: &OsStr) -> Vec<CompletionCandidate> {
     identities
         .into_iter()
         .filter(|identity| !identity.broken)
-        .filter(|identity| identity.name.as_str().starts_with(current))
+        .filter(|identity| identity.slug.as_str().starts_with(current))
         .map(|identity| {
-            let candidate = CompletionCandidate::new(identity.name.as_str().to_owned());
+            let candidate = CompletionCandidate::new(identity.slug.as_str().to_owned());
             if identity.active {
                 candidate.help(Some("active".into()))
             } else {
@@ -169,14 +169,14 @@ impl From<Error> for CliError {
 mod tests {
     use std::path::PathBuf;
 
-    use codex_auth_manager::{AuthStatus, Identity, IdentityDetails, IdentityName};
+    use codex_auth_manager::{AuthStatus, Identity, IdentityDetails, IdentitySlug};
 
     use super::{format_identity, format_status};
 
     #[test]
     fn list_line_includes_identity_details() {
         let identity = Identity {
-            name: IdentityName::try_from("personal").unwrap(),
+            slug: IdentitySlug::try_from("personal").unwrap(),
             path: PathBuf::from("personal.json"),
             active: true,
             broken: false,
@@ -199,7 +199,7 @@ mod tests {
             email: Some("the.user@gmail.com".to_owned()),
         };
         let status = AuthStatus::Managed {
-            identity: IdentityName::try_from("personal").unwrap(),
+            slug: IdentitySlug::try_from("personal").unwrap(),
         };
 
         assert_eq!(
